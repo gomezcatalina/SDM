@@ -1,7 +1,8 @@
 #Species Distribution Models in the Northwest Atlantic Ocean
 #By Catalina Gomez, Paul Regular, Amy-Lee Kouwenberg
 #Last updated: August 2016
-setwd("D:/RProjects/SDM_notShared")
+setwd("D:/RProjects/sdm")
+#packrat::init()  # -- https://rstudio.github.io/packrat/commands.html # Reads packages needed for plots and analysis
 library(plyr)
 library(raster)
 library(rgdal)
@@ -13,7 +14,6 @@ library(maptools)
 library(RColorBrewer) 
 require(maps)
 require(sp)
-require(rgdal)
 library(lubridate)
 
 ###**************************************************************************************************##
@@ -60,7 +60,7 @@ table(MarMamm_Summer$Species)
 # This crip will read the ones for the cetacean SDM - DO NOT DISTRIBUTE THIS LAYERS (contact: Cesar Fuentes Yavo for SST and CHL)
 
 #Once layers are ready, place them in the folder (predictors) and read them all:  
-rasterdir <- "predictors/"
+rasterdir <- "data/predictors/"
 predictorfiles = list.files(path = paste(rasterdir, sep=""), 
                             pattern = "\\.asc$", full.names = F)
 
@@ -140,8 +140,7 @@ maxentData <- function(db = NULL, # provide mammal database here
 
 ###**************************************************************************************************##
 ###------------------------------------PART V: Select only sightings that are inside of the study area-------#
-#StudyArea <- readOGR("D:/GIS/Data/Polygons", "StudyArea")
-StudyArea <- readOGR("Polygons", "StudyArea")
+StudyArea <- readOGR("data/polygons", "StudyArea")
 crs(StudyArea) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0" 
 plot(StudyArea)
 #pts <- points(MarMamm_Summer$Longitude, MarMamm_Summer$Latitude, pch=20, col="red", cex=0.5) 
@@ -306,36 +305,36 @@ dim(locs)
 #   Cumulative output type was selected to visualize MaxEnt results; this output does not rely on post-processing assumptions and it is useful when illustrating potential species range boundaries 
 
 ########### 1: No subsample, no bias file ################
-# model <- maxent(x = predictors, p = dat$target, removeDuplicates=TRUE,
-#                 path="output/NoBias/No_subsample",
-#                 args = c("-P", "-J", "replicates=100", "replicatetype=Crossvalidate",
-#                          "randomseed", "nooutputgrids",
-#                          "maximumiterations=5000",
-#                          "betamultiplier=1"))
-# 
-# map <- predict(model, predictors, progress='text', args=c("outputformat=raw"))
-# plot(map)
-# HSMap <- mean(map)
-# plot(HSMap)
-# points(pts[inside.StudyArea, ], pch=20, col="black", cex=0.5)
-# 
-# scaledCumsum <- function(x){
-#   z <- values(x)
-#   nas <- is.na(z)
-#   sorted <- sort(z, index.return = TRUE, na.last = NA, method = "quick")
-#   cum <- cumsum(sorted$x)
-#   z2 <- rep(NA, length(z))
-#   z2[!nas][sorted$ix] <- cum/max(cum)*100
-# 
-#   values(x)=z2
-#   return(x)
-# }
-# 
-# HSMap_cumulative <- scaledCumsum(HSMap)
-# plot(HSMap_cumulative)
-# outfile = "output/NoBias/No_subsample/HSMap_cumulative_nobias.tif"
-# writeRaster(HSMap_cumulative, filename=outfile, overwrite=TRUE, format="GTiff", datatype="FLT4S")
-# 
+model <- maxent(x = predictors, p = dat$target, removeDuplicates=TRUE,
+                path="output/NoBias/No_subsample",
+                args = c("-P", "-J", "replicates=100", "replicatetype=Crossvalidate",
+                         "randomseed", "nooutputgrids",
+                         "maximumiterations=5000",
+                         "betamultiplier=1"))
+
+map <- predict(model, predictors, progress='text', args=c("outputformat=raw"))
+plot(map)
+HSMap <- mean(map)
+plot(HSMap)
+points(pts[inside.StudyArea, ], pch=20, col="black", cex=0.5)
+
+scaledCumsum <- function(x){
+  z <- values(x)
+  nas <- is.na(z)
+  sorted <- sort(z, index.return = TRUE, na.last = NA, method = "quick")
+  cum <- cumsum(sorted$x)
+  z2 <- rep(NA, length(z))
+  z2[!nas][sorted$ix] <- cum/max(cum)*100
+
+  values(x)=z2
+  return(x)
+}
+
+HSMap_cumulative <- scaledCumsum(HSMap)
+plot(HSMap_cumulative)
+outfile = "output/NoBias/No_subsample/HSMap_cumulative_nobias.tif"
+writeRaster(HSMap_cumulative, filename=outfile, overwrite=TRUE, format="GTiff", datatype="FLT4S")
+
 # # 
 # # ########## 2: No subsample, with bias file ################
 model <- maxent(x = predictors, p = dat$target, removeDuplicates=TRUE, a = dat$bias,
